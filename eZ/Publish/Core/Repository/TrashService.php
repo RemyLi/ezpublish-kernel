@@ -12,8 +12,7 @@ use eZ\Publish\API\Repository\TrashService as TrashServiceInterface;
 use eZ\Publish\API\Repository\Repository as RepositoryInterface;
 use eZ\Publish\API\Repository\Values\Content\Content;
 use eZ\Publish\API\Repository\Exceptions\UnauthorizedException as APIUnauthorizedException;
-use eZ\Publish\Core\REST\Client\Values\Content\ContentInfo;
-use eZ\Publish\API\Repository\Values\Content\ContentInfo as APIContentInfo;
+use eZ\Publish\API\Repository\Values\Content\ContentInfo;
 use eZ\Publish\SPI\Persistence\Handler;
 use eZ\Publish\API\Repository\Values\Content\Location;
 use eZ\Publish\Core\Repository\Values\Content\TrashItem;
@@ -69,16 +68,16 @@ class TrashService implements TrashServiceInterface
         RepositoryInterface $repository,
         Handler $handler,
         Helper\NameSchemaService $nameSchemaService,
-        array $settings = array(),
-        PermissionCriterionResolver $permissionCriterionResolver
+        PermissionCriterionResolver $permissionCriterionResolver,
+        array $settings = array()
     ) {
         $this->permissionCriterionResolver = $permissionCriterionResolver;
         $this->repository = $repository;
         $this->persistenceHandler = $handler;
         $this->nameSchemaService = $nameSchemaService;
-        // Union makes sure default settings are ignored if provided in argument
-        $this->settings = $settings + array(//'defaultSetting' => array(),
-            );
+        $this->settings = $settings + array(
+            //'defaultSetting' => array(),
+        );
     }
 
     /**
@@ -301,8 +300,7 @@ class TrashService implements TrashServiceInterface
 
             foreach ($query->sortClauses as $sortClause) {
                 if (!$sortClause instanceof SortClause) {
-                    throw new InvalidArgumentValue('query->sortClauses',
-                        'only instances of SortClause class are allowed');
+                    throw new InvalidArgumentValue('query->sortClauses', 'only instances of SortClause class are allowed');
                 }
             }
         }
@@ -390,7 +388,7 @@ class TrashService implements TrashServiceInterface
      * @throws \eZ\Publish\API\Repository\Exceptions\BadStateException
      * @throws \eZ\Publish\API\Repository\Exceptions\InvalidArgumentException
      */
-    private function userHasPermissionsToRemove(APIContentInfo $contentInfo, Location $location): bool
+    private function userHasPermissionsToRemove(ContentInfo $contentInfo, Location $location): bool
     {
         if (!$this->repository->canUser('content', 'remove', $contentInfo, [$location])) {
             return false;
@@ -398,28 +396,24 @@ class TrashService implements TrashServiceInterface
 
         $contentRemoveCriterion = $this->permissionCriterionResolver->getPermissionsCriterion('content', 'remove');
 
-        if ($contentRemoveCriterion === false) {
-            return false;
-        } elseif ($contentRemoveCriterion !== true) {
-            // Query if there are any content in subtree current user don't have access to
-            $query = new Query(
-                array(
-                    'limit' => 0,
-                    'filter' => new CriterionLogicalAnd(
-                        array(
-                            new CriterionSubtree($location->pathString),
-                            new CriterionLogicalNot($contentRemoveCriterion),
-                        )
-                    ),
-                )
-            );
-
-            $result = $this->repository->getSearchService()->findContent($query, array(), false);
-            if ($result->totalCount > 0) {
-                return false;
-            }
-
-            return true;
+        if (!$contentRemoveCriterion instanceof Criterion) {
+            return (bool)$contentRemoveCriterion;
         }
+
+        $query = new Query(
+            array(
+                'limit' => 0,
+                'filter' => new CriterionLogicalAnd(
+                    array(
+                        new CriterionSubtree($location->pathString),
+                        new CriterionLogicalNot($contentRemoveCriterion),
+                    )
+                ),
+            )
+        );
+
+        $result = $this->repository->getSearchService()->findContent($query, array(), false);
+
+        return $result->totalCount == 0;
     }
 }

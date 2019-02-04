@@ -576,8 +576,8 @@ class Repository implements RepositoryInterface
             $this,
             $this->persistenceHandler,
             $this->getNameSchemaService(),
-            $this->serviceSettings['trash'],
-            $this->getPermissionCriterionResolver()
+            $this->getPermissionCriterionResolver(),
+            $this->serviceSettings['trash']
         );
 
         return $this->trashService;
