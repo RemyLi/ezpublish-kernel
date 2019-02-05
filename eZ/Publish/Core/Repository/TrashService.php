@@ -124,7 +124,7 @@ class TrashService implements TrashServiceInterface
      */
     public function trash(Location $location)
     {
-        if (!is_numeric($location->id)) {
+        if (empty($location->id)) {
             throw new InvalidArgumentValue('id', $location->id, 'Location');
         }
 
