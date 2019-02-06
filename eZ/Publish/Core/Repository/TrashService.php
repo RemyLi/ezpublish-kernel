@@ -57,11 +57,17 @@ class TrashService implements TrashServiceInterface
     protected $nameSchemaService;
 
     /**
+     * @var \eZ\Publish\API\Repository\PermissionCriterionResolver
+     */
+    protected $permissionCriterionResolver;
+
+    /**
      * Setups service with reference to repository object that created it & corresponding handler.
      *
      * @param \eZ\Publish\API\Repository\Repository $repository
      * @param \eZ\Publish\SPI\Persistence\Handler $handler
      * @param \eZ\Publish\Core\Repository\Helper\NameSchemaService $nameSchemaService
+     * @param \eZ\Publish\API\Repository\PermissionCriterionResolver $permissionCriterionResolver
      * @param array $settings
      */
     public function __construct(
@@ -116,11 +122,12 @@ class TrashService implements TrashServiceInterface
      * The current user may not have access to the returned trash item, check before using it.
      * Content is left untouched.
      *
-     * @throws \eZ\Publish\API\Repository\Exceptions\UnauthorizedException if the user is not allowed to trash the given location
-     *
      * @param \eZ\Publish\API\Repository\Values\Content\Location $location
      *
      * @return null|\eZ\Publish\API\Repository\Values\Content\TrashItem null if location was deleted, otherwise TrashItem
+     *
+     * @throws \eZ\Publish\API\Repository\Exceptions\BadStateException
+     * @throws \eZ\Publish\API\Repository\Exceptions\InvalidArgumentException
      */
     public function trash(Location $location)
     {
@@ -414,6 +421,6 @@ class TrashService implements TrashServiceInterface
 
         $result = $this->repository->getSearchService()->findContent($query, array(), false);
 
-        return $result->totalCount == 0;
+        return $result->totalCount === 0;
     }
 }
