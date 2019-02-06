@@ -231,7 +231,12 @@ class TrashServiceAuthorizationTest extends BaseTrashServiceTest
         /* END: Use Case */
     }
 
-    public function testTrashRequiresPremissionsToRemoveAllSubitems()
+    /**
+     * @throws \eZ\Publish\API\Repository\Exceptions\ForbiddenException
+     * @throws \eZ\Publish\API\Repository\Exceptions\NotFoundException
+     * @throws \eZ\Publish\API\Repository\Exceptions\UnauthorizedException
+     */
+    public function testTrashRequiresPermissionsToRemoveAllSubItems()
     {
         $this->createRoleWithPolicies('Publisher', [
             ['module' => 'content', 'function' => 'read'],
@@ -269,7 +274,10 @@ class TrashServiceAuthorizationTest extends BaseTrashServiceTest
 
         $parentLocation = $locationService->loadLocations($parentContent->contentInfo)[0];
 
-        $childContent = $this->createFolder(['eng-US' => 'Child Folder'], $parentLocation->id);
+        $this->createFolder(['eng-US' => 'Child Folder'], $parentLocation->id);
+
+        // refreshing Search Index as Trash Service relies internally on Search Service
+        $this->refreshSearch($repository);
 
         $this->expectException(UnauthorizedException::class);
         $trashService->trash($parentLocation);
